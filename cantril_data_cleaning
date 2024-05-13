@@ -12,7 +12,20 @@ fi
 for file in $all_files; do
 	header=$(head -n 1 "$file")
 	if ! echo "$header" | grep -q $'\t'; then
-		echo "$file is not tab-separated"
+		echo "$file is not tab separated"
 		exit 1
 	fi
+
+	cells_header=$(echo "$header" | awk -F '\t' '{print NF}')
+	line_count=2
+
+	while IFS= read -r line; do
+		cells_line=$(echo "$line" | awk -F '\t' '{print NF}')
+
+		if [ "$cells_line" != "$cells_header" ]; then
+			echo "The line #$line_count has different number of cells($cells_line) than in the header($cells_header)!"
+		fi
+
+		((line_count++))
+	done < <(tail +2 "$file")
 done
