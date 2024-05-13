@@ -1,11 +1,18 @@
 #!/bin/bash
 
-filename=$1
-
-while IFS="	" read -r country country_code year gdp_pc population homicide_rate life_expectancy cantril_score; do
-	
-	
+file_count=$#
+all_files=$@
 
 
+if [ "$file_count" != 3 ]; then
+	echo "Enter 3 files, please"
+	exit 1
+fi
 
-done < "filename"
+for file in $all_files; do
+	header=$(head -n 1 "$file")
+	if ! echo "$header" | grep -q $'\t'; then
+		echo "$file is not tab-separated"
+		exit 1
+	fi
+done
