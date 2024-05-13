@@ -1,0 +1,11 @@
+#!/bin/bash
+
+filename=$1
+
+while IFS="	" read -r country country_code year gdp_pc population homicide_rate life_expectancy cantril_score; do
+	
+	
+
+
+
+done < "filename"
