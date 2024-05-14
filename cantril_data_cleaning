@@ -11,21 +11,30 @@ fi
 
 for file in $all_files; do
 	header=$(head -n 1 "$file")
+
 	if ! echo "$header" | grep -q $'\t'; then
 		echo "$file is not tab separated"
 		exit 1
 	fi
 
 	cells_header=$(echo "$header" | awk -F '\t' '{print NF}')
+
+	continent_pos=$(echo "$header" | awk -F '\t' '{for(i=1; i<=NF; i++) if($i=="Continent") print i}')
+
+	temp_file=$(mktemp)
+
 	line_count=2
 
 	while IFS= read -r line; do
 		cells_line=$(echo "$line" | awk -F '\t' '{print NF}')
 
+
 		if [ "$cells_line" != "$cells_header" ]; then
 			echo "The line #$line_count has different number of cells($cells_line) than in the header($cells_header)!"
 		fi
 
+		echo "$line" | awk -v pos="$continent_pos" 'BEGIN{FS=OFS="\t"}{for(i=1; i<=NF; i++) {if(i!=pos) {printf $i; if(i<NF) printf OFS}} print ""}'
+
 		((line_count++))
-	done < <(tail +2 "$file")
+	done < "$file"
 done
