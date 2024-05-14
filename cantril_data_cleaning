@@ -1,11 +1,14 @@
 #!/bin/bash
 
 file_count=$#
-all_files=$@
-
+file1=$1
+file2=$2
+file3=$3
+all_files="$file1 $file2 $file3"
+header_output=false
 
 if [ "$file_count" != 3 ]; then
-	echo "Enter 3 files, please"
+	echo "Enter exactly 3 files, please"
 	exit 1
 fi
 
@@ -19,22 +22,29 @@ for file in $all_files; do
 
 	cells_header=$(echo "$header" | awk -F '\t' '{print NF}')
 
-	continent_pos=$(echo "$header" | awk -F '\t' '{for(i=1; i<=NF; i++) if($i=="Continent") print i}')
+	continent_ind=$(echo "$header" | awk -F '\t' '{for(i=1; i<=NF; i++) if($i=="Continent") print i}')
 
-	temp_file=$(mktemp)
+	if [ "$header_output" == false ]; then
+		if [ -n "$continent_ind" ]; then
+			echo "$header" | awk -v ind="$continent_ind" 'BEGIN{FS=OFS="\t"}{for(i=1; i<=NF; i++) if(i!=ind) {printf "%s", $i; if(i<NF) printf OFS}; print ""}'
+		else
+			echo "$header"
+		fi
+		header_output=true
+	fi
 
 	line_count=2
 
-	while IFS= read -r line; do
+	tail -n +2 "$file" | while IFS= read -r line; do
 		cells_line=$(echo "$line" | awk -F '\t' '{print NF}')
 
 
 		if [ "$cells_line" != "$cells_header" ]; then
 			echo "The line #$line_count has different number of cells($cells_line) than in the header($cells_header)!"
+			((line_count++))
+			continue
 		fi
 
-		echo "$line" | awk -v pos="$continent_pos" 'BEGIN{FS=OFS="\t"}{for(i=1; i<=NF; i++) {if(i!=pos) {printf $i; if(i<NF) printf OFS}} print ""}'
-
 		((line_count++))
-	done < "$file"
+	done
 done
