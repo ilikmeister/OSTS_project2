@@ -85,3 +85,31 @@ for file in $all_files; do
 	# Adding the tempfile to the array
 	temp_files+="$new_temp_file"
 done
+
+# Assigning new temp files for the second and third files
+modified_second_file=$(mktemp)
+modified_third_file=$(mktemp)
+
+# Removing first three columns Country, Code and Year from 2nd and 3rd files
+awk -F '\t' '{ 
+    for (i = 4; i <= NF; i++) {
+        printf "%s", $i
+        if (i < NF) {
+            printf "\t"
+        } else {
+            printf "\n"
+        }
+    }
+}' "$temp_files[1]" > "$modified_second_file"
+
+awk -F '\t' '{ 
+    for (i = 4; i <= NF; i++) {
+        printf "%s", $i
+        if (i < NF) {  
+            printf "\t"
+        } else {    
+            printf "\n"
+        }
+    }
+}' "$temp_files[2]" > "$modified_third_file"
+
