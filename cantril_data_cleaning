@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# This is a script for cleaning the data taken from 3 .tsv files written by Iliyas Akhmet (24038357)
+
+# Assigning the variables
 file_count=$#
 file1=$1
 file2=$2
@@ -7,44 +10,75 @@ file3=$3
 all_files="$file1 $file2 $file3"
 header_output=false
 
+# Checking for the number of entered files
 if [ "$file_count" != 3 ]; then
-	echo "Enter exactly 3 files, please"
+	echo "The program expects 3 files, not $file_count"
 	exit 1
 fi
 
+# Looping through each file
 for file in $all_files; do
+	# Reading and assigning the variable header of the file
 	header=$(head -n 1 "$file")
 
+	# Checking for the tab separated header, in case of an error sending it to stderr and skipping
 	if ! echo "$header" | grep -q $'\t'; then
-		echo "$file is not tab separated"
-		exit 1
+		echo "$file is not tab separated" >&2
+		continue
 	fi
 
+	# Counting the number of cells in the header
 	cells_header=$(echo "$header" | awk -F '\t' '{print NF}')
 
+	# Identifying the index of the Continent column
 	continent_ind=$(echo "$header" | awk -F '\t' '{for(i=1; i<=NF; i++) if($i=="Continent") print i}')
 
-	if [ "$header_output" == false ]; then
-		if [ -n "$continent_ind" ]; then
-			echo "$header" | awk -v ind="$continent_ind" 'BEGIN{FS=OFS="\t"}{for(i=1; i<=NF; i++) if(i!=ind) {printf "%s", $i; if(i<NF) printf OFS}; print ""}'
-		else
-			echo "$header"
-		fi
-		header_output=true
-	fi
+	# Removing the Continent column from the header
+	new_header=$(echo "$header" | awk -v ind="$continent_ind" 'BEGIN{FS=OFS="\t"}{for(i=1; i<=NF; i++) if(i!=ind) {printf "%s", $i; if(i<NF) printf OFS}; print ""}')
 
+	# Creating a temporary file
+	temp_file=$(mktemp)
+
+	# Writing the new header to the temporary file
+	echo "$new_header" > "$temp_file"
+
+	# Assigning line's number
 	line_count=2
 
-	tail -n +2 "$file" | while IFS= read -r line; do
+	# Looping through the lines and skipping the header
+	while IFS= read -r line; do
+		# Counting the number of cells in each line
 		cells_line=$(echo "$line" | awk -F '\t' '{print NF}')
 
-
+		# Checking if they are equal to the header, in case of an error sending it to stderr and skipping
 		if [ "$cells_line" != "$cells_header" ]; then
-			echo "The line #$line_count has different number of cells($cells_line) than in the header($cells_header)!"
-			((line_count++))
+			echo "The line #$line_count has different number of cells($cells_line) than in the header($cells_header)!" >&2
 			continue
 		fi
 
+		# Removing the Continent column data from the line
+		new_line=$(echo "$line" | awk -v ind="$continent_ind" 'BEGIN{FS=OFS="\t"}{for(i=1; i<=NF; i++) if(i!=ind) {printf "%s", $i; if(i<NF) printf OFS}; print ""}')
+
+		# Assigning the country code and year variables
+		country_code=$(echo "$new_line" | awk -F '\t' '{print $2}')
+		year=$(echo "$new_line" | awk -F '\t' '{print $3}')
+
+		# Checking for empty country code, and skipping if they are
+		if [ "$country_code" = "" ]; then
+			continue
+		fi
+
+		# Checking if the range of the year is between 2011 and 2021, and skipping if it is not
+		if [ "$year" -lt 2011 ] || [ "$year" -gt 2021 ]; then
+			continue
+		fi
+
+		# Writing the new line into the temporary file
+		echo "$new_line" >> "$temp_file"
+
+		# Moving to the next line
 		((line_count++))
-	done
+	done < <(tail -n +2 "$file")
 done
+
+
