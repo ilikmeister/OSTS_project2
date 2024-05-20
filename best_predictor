@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# This is a script for determining the best predictor for Cantril Ladder Score written by Iliyas Akhmet (24038357)
+
+# Assigning the variables
+
+file=$1
+
+# Checking the number of inputs
+if [ $# != 1 ]; then
+	echo "You entered $# files, the program requires 1"
+	exit 1
+fi
+
+# Looping through the file and assigning variables for the fields
+while IFS=',' read -r country country_code year gdp population homicide life_exp cantril_ladder; do
+
+done < "$file"
