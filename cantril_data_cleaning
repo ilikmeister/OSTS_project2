@@ -8,7 +8,7 @@ file1=$1
 file2=$2
 file3=$3
 all_files="$file1 $file2 $file3"
-header_output=false
+temp_files=()
 
 # Checking for the number of entered files
 if [ "$file_count" != 3 ]; then
@@ -79,6 +79,6 @@ for file in $all_files; do
 		# Moving to the next line
 		((line_count++))
 	done < <(tail -n +2 "$file")
+	# Adding the tempfile to the array
+	temp_files+="$temp_file"
 done
-
-
