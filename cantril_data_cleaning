@@ -160,3 +160,6 @@ awk 'BEGIN { FS = "\t" }
 }' "$reordered_file" > "$final_output"
 
 cat "$final_output"
+
+# Removing temporary files
+rm -f "${temp_files[@]}" "$modified_second_file" "$modified_third_file" "$sorted_first_file" "$sorted_second_file" "$sorted_third_file" "$joined_first_second" "$sorted_first_second" "$joined_all" "$reordered_file" "$final_output"
