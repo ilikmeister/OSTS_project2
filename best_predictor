@@ -8,11 +8,16 @@ file=$1
 
 # Checking the number of inputs
 if [ $# != 1 ]; then
-	echo "You entered $# files, the program requires 1"
+	echo "You entered $# files, the program requires 1."
 	exit 1
 fi
 
-# Looping through the file and assigning variables for the fields
-while IFS=',' read -r country country_code year gdp population homicide life_exp cantril_ladder; do
+# Checking the existance of the file
+if [ ! -f "$file" ]; then
+	echo "File named $file doesn't exist."
+	exit 1
+fi
 
-done < "$file"
+# Checking if the file has a content
+if [ ! -s "$file" ]; then
+	echo "File named $file is empty."
