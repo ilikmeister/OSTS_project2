@@ -26,3 +26,47 @@ fi
 
 # Storing the data into temporary file without the header
 tail -n +2 "$file" > temp_file
+
+# Looping through all predictors and calculating the correlations
+for ((i=0;i<${predictors[@]};i++)); do
+	# Setting the corresponding column number for each predictor
+	predictor=$(($i+4))
+	# Starting the awk for each predictor's correlation calculation
+	correlation=$(awk -v predictor="$predictor") '
+		BEGIN {
+			# Initializing variables
+			FS="\t";
+			n=0;
+			sum_x=0;
+			sum_y=0;
+			sum_xx=0;
+			sum_yy=0;
+			sum_xy=0;
+		}
+		# Checking the header skip
+		NR>1 {
+			# Checking if the values in the predictor's and Cantril Ladder are not empty
+			if ($8 != "" && $predictor != "") {
+				# Calculating the sums
+				n++
+				sum_x += $predictor
+				sum_y += $8
+				sum_xx += $predictor*$predictor
+				sum_yy += $8*$8
+				sum_xy += $predictor*$8
+			}
+		}
+		END {
+			# Calculating the averages
+			avg_x = sum_x / n
+			avg_y = sum_y / n
+			# Calculating the covariance
+			covariance = (sum_xy - sum_x * avg_y) / n
+			# Calculating the standard deviations
+			std_x = sqrt((sum_xx - sum_x * sum_x / n) / n)
+			std_y = sqrt((sum_yy - sum_y * sum_y / n) / n)
+			# Calculating the correlation
+			correlation = covariance / (std_x * std_y)
+			# Printing the correlation with 3 digits after the dot
+			printf "%.3fm", correlation
+		}' temp_file
