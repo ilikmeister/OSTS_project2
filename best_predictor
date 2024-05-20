@@ -70,3 +70,4 @@ for ((i=0;i<${predictors[@]};i++)); do
 			# Printing the correlation with 3 digits after the dot
 			printf "%.3fm", correlation
 		}' temp_file
+done
