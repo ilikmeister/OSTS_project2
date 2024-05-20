@@ -91,25 +91,72 @@ modified_second_file=$(mktemp)
 modified_third_file=$(mktemp)
 
 # Removing first three columns Country, Code and Year from 2nd and 3rd files
-awk -F '\t' '{ 
-    for (i = 4; i <= NF; i++) {
-        printf "%s", $i
-        if (i < NF) {
-            printf "\t"
-        } else {
-            printf "\n"
-        }
-    }
-}' "$temp_files[1]" > "$modified_second_file"
+awk -F '\t' '{
+	for (i = 4; i <= NF; i++) {
+		printf "%s", $i
+		if (i < NF) {
+			printf "\t"
+		} else {
+			printf "\n"
+		}
+	}
+}' "${temp_files[1]}" > "$modified_second_file"
 
-awk -F '\t' '{ 
-    for (i = 4; i <= NF; i++) {
-        printf "%s", $i
-        if (i < NF) {  
-            printf "\t"
-        } else {    
-            printf "\n"
-        }
-    }
-}' "$temp_files[2]" > "$modified_third_file"
+awk -F '\t' '{
+	for (i = 4; i <= NF; i++) {
+		printf "%s", $i
+		if (i < NF) {
+			printf "\t"
+		} else {
+			printf "\n"
+		}
+	}
+}' "${temp_files[2]}" > "$modified_third_file"
 
+# Sorting the files by the last column (country+year) for joining
+sorted_first_file=$(mktemp)
+sorted_second_file=$(mktemp)
+sorted_third_file=$(mktemp)
+
+sort -t $'\t' -k $(awk -F '\t' '{print NF}' "${temp_files[0]}") "${temp_files[0]}" > "$sorted_first_file"
+sort -t $'\t' -k $(awk -F '\t' '{print NF}' "$modified_second_file") "$modified_second_file" > "$sorted_second_file"
+sort -t $'\t' -k $(awk -F '\t' '{print NF}' "$modified_third_file") "$modified_third_file" > "$sorted_third_file"
+
+# Joining the first and the second files based on the last column (country+year)
+joined_first_second=$(mktemp)
+join -1 $(awk '{print NF}' "$sorted_first_file") -2 $(awk '{print NF}' "$sorted_second_file") "$sorted_first_file" "$sorted_second_file" > "$joined_first_second"
+
+# Sorting the joined file based on the last column
+sorted_first_second=$(mktemp)
+sort -t $'\t' -k $(awk -F '\t' '{print NF}' "$joined_first_second") "$joined_first_second" > "$sorted_first_second"
+
+# Joining it with the third file
+joined_all=$(mktemp)
+join -1 $(awk '{print NF}' "$sorted_first_second") -2 $(awk '{print NF}' "$sorted_third_file") "$sorted_first_second" "$sorted_third_file" > "$joined_all"
+
+# Reordering the columns and removing the duplicated columns
+reordered_file=$(mktemp)
+
+awk 'BEGIN { FS = "\t" }
+{
+	for (i = 1; i <= NF; i++) {
+		field[$i] = $i
+	}
+
+	print field["Country"], field["Code"], field["Year"], field["\"GDP per capita, PPP (constant 2017 international $)\""], field["Population (historical estimates)"], field["\"Homicide rate per 100,000 population - Both sexes - All ages\""], field["Life expectancy - Sex: all - Age: at birth - Variant: estimates"], field["Cantril ladder score"]
+}' "$joined_all" > "$reordered_file"
+
+# Creating the final output with better headers
+final_output=$(mktemp)
+awk 'BEGIN { FS = "\t" }
+{
+	if (NR == 1) {
+		gsub("\"GDP per capita, PPP (constant 2017 international $)\"", "GDP per capita")
+		gsub("Population (historical estimates)", "Population")
+		gsub("\"Homicide rate per 100,000 population - Both sexes - All ages\"","Homicide Rate")
+		gsub("Life expectancy - Sex: all - Age: at birth - Variant: estimates","Life Expectancy")
+	}
+	print
+}' "$reordered_file" > "$final_output"
+
+cat "$final_output"
