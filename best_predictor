@@ -21,3 +21,4 @@ fi
 # Checking if the file has a content
 if [ ! -s "$file" ]; then
 	echo "File named $file is empty."
+fi
