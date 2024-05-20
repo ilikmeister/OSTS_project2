@@ -5,6 +5,7 @@
 # Assigning the variables
 
 file=$1
+all_predictors=("GDP per capita" "Population" "Homicide Rate" "Life Expectancy")
 
 # Checking the number of inputs
 if [ $# != 1 ]; then
@@ -22,3 +23,6 @@ fi
 if [ ! -s "$file" ]; then
 	echo "File named $file is empty."
 fi
+
+# Storing the data into temporary file without the header
+tail -n +2 "$file" > temp_file
