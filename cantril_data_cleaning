@@ -79,6 +79,9 @@ for file in $all_files; do
 		# Moving to the next line
 		((line_count++))
 	done < <(tail -n +2 "$file")
+	# Creating a new temp file and adding an extra column of country and year combined
+	new_temp_file=$(mktemp)
+	awk -F '\t' '{print $0 "\t" $1$3}' "$temp_file" > "$new_temp_file"
 	# Adding the tempfile to the array
-	temp_files+="$temp_file"
+	temp_files+="$new_temp_file"
 done
