@@ -6,68 +6,66 @@
 
 file=$1
 all_predictors=("GDP per capita" "Population" "Homicide Rate" "Life Expectancy")
+max_abs_correlation=0
+best_predictor=""
 
 # Checking the number of inputs
 if [ $# != 1 ]; then
-	echo "You entered $# files, the program requires 1."
-	exit 1
+    echo "You entered $# files, the program requires 1."
+    exit 1
 fi
 
-# Checking the existance of the file
+# Checking the existence of the file
 if [ ! -f "$file" ]; then
-	echo "File named $file doesn't exist."
-	exit 1
+    echo "File named $file doesn't exist."
+    exit 1
 fi
 
 # Checking if the file has a content
 if [ ! -s "$file" ]; then
-	echo "File named $file is empty."
+    echo "File named $file is empty."
 fi
 
 # Storing the data into temporary file without the header
 tail -n +2 "$file" > temp_file
 
 # Looping through all predictors and calculating the correlations
-for ((i=0;i<${predictors[@]};i++)); do
-	# Setting the corresponding column number for each predictor
-	predictor=$(($i+4))
-	# Starting the awk for each predictor's correlation calculation
-	correlation=$(awk -v predictor="$predictor") '
-		BEGIN {
-			# Initializing variables
-			FS="\t";
-			n=0;
-			sum_x=0;
-			sum_y=0;
-			sum_xx=0;
-			sum_yy=0;
-			sum_xy=0;
-		}
-		# Checking the header skip
-		NR>1 {
-			# Checking if the values in the predictor's and Cantril Ladder are not empty
-			if ($8 != "" && $predictor != "") {
-				# Calculating the sums
-				n++
-				sum_x += $predictor
-				sum_y += $8
-				sum_xx += $predictor*$predictor
-				sum_yy += $8*$8
-				sum_xy += $predictor*$8
-			}
-		}
-		END {
-			# Calculating the averages
-			avg_x = sum_x / n
-			avg_y = sum_y / n
-			# Calculating the covariance
-			covariance = (sum_xy - sum_x * avg_y) / n
-			# Calculating the standard deviations
-			std_x = sqrt((sum_xx - sum_x * sum_x / n) / n)
-			std_y = sqrt((sum_yy - sum_y * sum_y / n) / n)
-			# Calculating the correlation
-			correlation = covariance / (std_x * std_y)
-			# Printing the correlation with 3 digits after the dot
-			printf "%.3fm", correlation
-		}' temp_file
+for ((i=0; i<${#all_predictors[@]}; i++)); do
+    predictor=$(($i + 4))
+    correlation=$(awk -v predictor="$predictor" '
+        BEGIN { FS="\t"; sum_x=0; sum_y=0; sum_xy=0; sum_xx=0; sum_yy=0; n=0 } # Initializing variables
+        NR>1 {
+	    if ($8 != "" && $predictor != "") {
+                sum_x += $predictor
+                sum_y += $8
+                sum_xy += $predictor*$8
+                sum_xx += $predictor*$predictor
+                sum_yy += $8*$8
+                n++
+            }
+        }
+        END {
+            mean_x = sum_x / n
+            mean_y = sum_y / n
+            covariance = (sum_xy - sum_x*mean_y) / n
+            stddev_x = sqrt((sum_xx - sum_x*sum_x/n) / n)
+            stddev_y = sqrt((sum_yy - sum_y*sum_y/n) / n)
+	    correlation = covariance / (stddev_x * stddev_y)
+            printf "%.3f\n", correlation
+        }' temp_file)
+
+    # Printing the mean correlation for the predictor
+    echo "Mean correlation of ${all_predictors[$i]} with Cantril ladder is $correlation"
+    # Identifying the maximum absolute correlation
+    abs_correlation=$(echo "$correlation" | tr -d '-')
+    if (( $(awk 'BEGIN {print ('$abs_correlation' > '$max_abs_correlation')}' ) )); then
+        max_abs_correlation=$abs_correlation
+        best_predictor="${all_predictors[$i]} (r = $correlation)"
+    fi
 done
+
+# Printing the most predictive mean correlation
+echo "Most predictive mean correlation with the Cantril ladder is $best_predictor"
+
+# Removing the temporary file
+rm temp_file

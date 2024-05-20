@@ -86,41 +86,14 @@ for file in $all_files; do
 	temp_files+="$new_temp_file"
 done
 
-# Assigning new temp files for the second and third files
-modified_second_file=$(mktemp)
-modified_third_file=$(mktemp)
-
-# Removing first three columns Country, Code and Year from 2nd and 3rd files
-awk -F '\t' '{
-	for (i = 4; i <= NF; i++) {
-		printf "%s", $i
-		if (i < NF) {
-			printf "\t"
-		} else {
-			printf "\n"
-		}
-	}
-}' "${temp_files[1]}" > "$modified_second_file"
-
-awk -F '\t' '{
-	for (i = 4; i <= NF; i++) {
-		printf "%s", $i
-		if (i < NF) {
-			printf "\t"
-		} else {
-			printf "\n"
-		}
-	}
-}' "${temp_files[2]}" > "$modified_third_file"
-
 # Sorting the files by the last column (country+year) for joining
 sorted_first_file=$(mktemp)
 sorted_second_file=$(mktemp)
 sorted_third_file=$(mktemp)
 
 sort -t $'\t' -k $(awk -F '\t' '{print NF}' "${temp_files[0]}") "${temp_files[0]}" > "$sorted_first_file"
-sort -t $'\t' -k $(awk -F '\t' '{print NF}' "$modified_second_file") "$modified_second_file" > "$sorted_second_file"
-sort -t $'\t' -k $(awk -F '\t' '{print NF}' "$modified_third_file") "$modified_third_file" > "$sorted_third_file"
+sort -t $'\t' -k $(awk -F '\t' '{print NF}' "${temp_files[1]}") "${temp_files[1]}" > "$sorted_second_file"
+sort -t $'\t' -k $(awk -F '\t' '{print NF}' "${temp_files[2]}") "${temp_files[2]}" > "$sorted_third_file"
 
 # Joining the first and the second files based on the last column (country+year)
 joined_first_second=$(mktemp)
@@ -162,4 +135,4 @@ awk 'BEGIN { FS = "\t" }
 cat "$final_output"
 
 # Removing temporary files
-rm -f "${temp_files[@]}" "$modified_second_file" "$modified_third_file" "$sorted_first_file" "$sorted_second_file" "$sorted_third_file" "$joined_first_second" "$sorted_first_second" "$joined_all" "$reordered_file" "$final_output"
+rm -f "${temp_files[@]}" "$sorted_first_file" "$sorted_second_file" "$sorted_third_file" "$joined_first_second" "$sorted_first_second" "$joined_all" "$reordered_file" "$final_output"
